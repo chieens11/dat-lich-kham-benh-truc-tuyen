@@ -1,0 +1,211 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model VaiTro {
+  MaVaiTro  Int         @id @default(autoincrement())
+  TenVaiTro String      @unique
+  MoTa      String?
+  NguoiDung NguoiDung[]
+
+  @@map("VaiTro")
+}
+
+model NguoiDung {
+  MaNguoiDung Int      @id @default(autoincrement())
+  TenDangNhap String   @unique
+  MatKhauHash String
+  Email       String?  @unique
+  SoDienThoai String?
+  TrangThai   Boolean  @default(true)
+  DaXoa       Boolean  @default(false)
+  MaVaiTro    Int
+  NgayTao     DateTime @default(now())
+  AnhDaiDien  String?
+
+  VaiTro   VaiTro     @relation(fields: [MaVaiTro], references: [MaVaiTro])
+  BacSi    BacSi?
+  BenhNhan BenhNhan[]
+  ThongBao ThongBao[]
+
+  @@map("NguoiDung")
+}
+
+model ChuyenKhoa {
+  MaChuyenKhoa  Int     @id @default(autoincrement())
+  TenChuyenKhoa String
+  MoTa          String?
+  HinhAnhURL    String?
+  BacSi         BacSi[]
+
+  @@map("ChuyenKhoa")
+}
+
+model BacSi {
+  MaBacSi      Int       @id
+  HoTen        String
+  GioiTinh     String?
+  NgaySinh     DateTime?
+  TieuSu       String?
+  PhiKham      Float     @default(0)
+  MaChuyenKhoa Int?
+  TrinhDo      String?
+  KinhNghiem   Int?
+  DaXoa        Boolean   @default(false)
+
+  NguoiDung   NguoiDung      @relation(fields: [MaBacSi], references: [MaNguoiDung])
+  ChuyenKhoa  ChuyenKhoa?    @relation(fields: [MaChuyenKhoa], references: [MaChuyenKhoa])
+  LichLamViec LichLamViec[]
+  LichHen     LichHen[]
+  DanhGia     DanhGiaBacSi[]
+
+  @@map("BacSi")
+}
+
+model LichLamViec {
+  MaLich          Int    @id @default(autoincrement())
+  MaBacSi         Int
+  ThuTrongTuan    Int
+  ThoiGianBatDau  String
+  ThoiGianKetThuc String
+  SoBenhNhanToiDa Int    @default(10)
+
+  BacSi        BacSi          @relation(fields: [MaBacSi], references: [MaBacSi])
+  KhungGioKham KhungGioKham[]
+
+  @@map("LichLamViec")
+}
+
+model KhungGioKham {
+  MaKhungGio      Int      @id @default(autoincrement())
+  MaLich          Int
+  NgayKham        DateTime @db.Date
+  ThoiGianBatDau  String
+  ThoiGianKetThuc String
+  DaDat           Boolean  @default(false)
+
+  LichLamViec LichLamViec @relation(fields: [MaLich], references: [MaLich])
+  LichHen     LichHen[]
+
+  @@map("KhungGioKham")
+}
+
+model BenhNhan {
+  MaBenhNhan  Int      @id @default(autoincrement())
+  MaNguoiDung Int
+  HoTen       String
+  NgaySinh    DateTime @db.Date
+  GioiTinh    String
+  CMND_CCCD   String?
+  DiaChi      String?
+  TienSuBenh  String?
+  DaXoa       Boolean  @default(false)
+
+  NguoiDung NguoiDung      @relation(fields: [MaNguoiDung], references: [MaNguoiDung])
+  LichHen   LichHen[]
+  DanhGia   DanhGiaBacSi[]
+
+  @@map("BenhNhan")
+}
+
+model TrangThaiLichHen {
+  MaTrangThai  Int       @id @default(autoincrement())
+  TenTrangThai String    @unique
+  LichHen      LichHen[]
+
+  @@map("TrangThaiLichHen")
+}
+
+model LichHen {
+  MaLichHen   Int      @id @default(autoincrement())
+  MaBenhNhan  Int
+  MaBacSi     Int
+  MaKhungGio  Int
+  LyDoKham    String?
+  GhiChu      String?
+  MaTrangThai Int
+  NgayTao     DateTime @default(now())
+  NgayCapNhat DateTime @default(now())
+
+  BenhNhan     BenhNhan         @relation(fields: [MaBenhNhan], references: [MaBenhNhan], onDelete: NoAction, onUpdate: NoAction)
+  BacSi        BacSi            @relation(fields: [MaBacSi], references: [MaBacSi], onDelete: NoAction, onUpdate: NoAction)
+  KhungGioKham KhungGioKham     @relation(fields: [MaKhungGio], references: [MaKhungGio], onDelete: NoAction, onUpdate: NoAction)
+  TrangThai    TrangThaiLichHen @relation(fields: [MaTrangThai], references: [MaTrangThai], onDelete: NoAction, onUpdate: NoAction)
+  HoSoKhamBenh HoSoKhamBenh?
+  HoaDon       HoaDon?
+
+  @@unique([MaBacSi, MaKhungGio])
+  @@map("LichHen")
+}
+
+model HoSoKhamBenh {
+  MaHoSo    Int      @id @default(autoincrement())
+  MaLichHen Int      @unique
+  ChanDoan  String?
+  DonThuoc  String?
+  GhiChu    String?
+  NgayTao   DateTime @default(now())
+
+  LichHen LichHen @relation(fields: [MaLichHen], references: [MaLichHen])
+
+  @@map("HoSoKhamBenh")
+}
+
+model HoaDon {
+  MaHoaDon           Int      @id @default(autoincrement())
+  MaLichHen          Int      @unique
+  TongTien           Float
+  TrangThaiThanhToan String   @default("Chưa thanh toán")
+  NgayTao            DateTime @default(now())
+
+  LichHen   LichHen     @relation(fields: [MaLichHen], references: [MaLichHen])
+  ThanhToan ThanhToan[]
+
+  @@map("HoaDon")
+}
+
+model ThanhToan {
+  MaThanhToan         Int      @id @default(autoincrement())
+  MaHoaDon            Int
+  SoTien              Float
+  NgayThanhToan       DateTime @default(now())
+  PhuongThucThanhToan String?
+  MaGiaoDich          String?
+  TrangThai           String?
+
+  HoaDon HoaDon @relation(fields: [MaHoaDon], references: [MaHoaDon])
+
+  @@map("ThanhToan")
+}
+
+model ThongBao {
+  MaThongBao  Int      @id @default(autoincrement())
+  MaNguoiDung Int
+  TieuDe      String
+  NoiDung     String
+  DaDoc       Boolean  @default(false)
+  NgayTao     DateTime @default(now())
+
+  NguoiDung NguoiDung @relation(fields: [MaNguoiDung], references: [MaNguoiDung])
+
+  @@map("ThongBao")
+}
+
+model DanhGiaBacSi {
+  MaDanhGia  Int      @id @default(autoincrement())
+  MaBacSi    Int
+  MaBenhNhan Int
+  Diem       Int
+  BinhLuan   String?
+  NgayTao    DateTime @default(now())
+
+  BacSi    BacSi    @relation(fields: [MaBacSi], references: [MaBacSi], onDelete: NoAction, onUpdate: NoAction)
+  BenhNhan BenhNhan @relation(fields: [MaBenhNhan], references: [MaBenhNhan], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("DanhGiaBacSi")
+}
